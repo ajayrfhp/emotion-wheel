@@ -176,10 +176,10 @@ export default function EmotionWheel({ emotions, onSelect, size = 460 }: Props) 
               // within the slice rather than spilling past neighbors.
               const labelR = r * 0.94;
               const labelPos = polar(cx, cy, labelR, sMid);
-              // Flip text on the bottom half (90°–270°) so it reads
-              // right-side-up. Top half reads outward; bottom half reads
-              // inward (after flip) — but always upright.
-              const flip = sMid > 90 && sMid < 270;
+              // Unflipped rotation would be (sMid - 90). That produces
+              // upside-down text whenever sMid is in (180°, 360°) — the
+              // left half of the wheel. Flip those by +180°.
+              const flip = sMid > 180;
               const rotation = flip ? sMid + 90 : sMid - 90;
               const anchor = flip ? "start" : "end";
               const enriched: Emotion = {
