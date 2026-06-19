@@ -17,6 +17,15 @@ export const metadata: Metadata = {
   title: "Emotion Wheel",
   description: "Share what you're feeling — and what you need.",
   manifest: "/manifest.webmanifest",
+  // Space URLs are unguessable secrets — keep them out of search engines and
+  // strip the Referer header so clicking any external link doesn't leak the URL.
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: { index: false, follow: false },
+  },
+  referrer: "no-referrer",
   appleWebApp: {
     capable: true,
     title: "Emotion Wheel",
