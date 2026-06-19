@@ -69,7 +69,7 @@ export const DEFAULT_EMOTIONS_48: Emotion[] = [
     ]),
   },
   {
-    id: "sadness", name: "Sadness", color: "#4895EF", emoji: "😢", defaultActionId: "comfort",
+    id: "sadness", name: "Sad", color: "#4895EF", emoji: "😢", defaultActionId: "comfort",
     children: sub("sadness", "comfort", [
       "Lonely", "Vulnerable", "Despair", "Guilty", "Depressed", "Hurt", "Disappointed", "Bored",
     ]),

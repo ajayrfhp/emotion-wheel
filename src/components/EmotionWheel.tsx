@@ -56,7 +56,7 @@ function lighten(hex: string, amount: number): string {
   return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`;
 }
 
-export default function EmotionWheel({ emotions, onSelect, size = 360 }: Props) {
+export default function EmotionWheel({ emotions, onSelect, size = 460 }: Props) {
   const cx = size / 2;
   const cy = size / 2;
   const r = size / 2 - 6;
@@ -120,7 +120,7 @@ export default function EmotionWheel({ emotions, onSelect, size = 360 }: Props) 
     <svg
       viewBox={`0 0 ${size} ${size}`}
       width="100%"
-      className="max-w-md mx-auto select-none touch-manipulation h-auto"
+      className="max-w-lg mx-auto select-none touch-manipulation h-auto"
       role="group"
       aria-label="Emotion wheel"
     >
@@ -128,7 +128,7 @@ export default function EmotionWheel({ emotions, onSelect, size = 360 }: Props) 
         const cStart = i * coreSlice;
         const cEnd = (i + 1) * coreSlice;
         const cMid = cStart + coreSlice / 2;
-        const corePos = polar(cx, cy, rInner * 0.6, cMid);
+        const corePos = polar(cx, cy, rInner * 0.72, cMid);
         const children = core.children ?? [];
         const subSlice = children.length ? coreSlice / children.length : 0;
         const lighter = lighten(core.color, 0.35);
@@ -176,12 +176,10 @@ export default function EmotionWheel({ emotions, onSelect, size = 360 }: Props) 
               // within the slice rather than spilling past neighbors.
               const labelR = r * 0.94;
               const labelPos = polar(cx, cy, labelR, sMid);
-              // Radial text: SVG rotate is CW from +x axis. For the text's
-              // +x direction to point outward, rotate by (sMid - 90).
-              // On the bottom half of the wheel (sMid 180–360, i.e., below
-              // the horizontal axis) that rotation produces upside-down text
-              // — flip 180° and swap the anchor so it still extends inward.
-              const flip = sMid >= 180;
+              // Flip text on the bottom half (90°–270°) so it reads
+              // right-side-up. Top half reads outward; bottom half reads
+              // inward (after flip) — but always upright.
+              const flip = sMid > 90 && sMid < 270;
               const rotation = flip ? sMid + 90 : sMid - 90;
               const anchor = flip ? "start" : "end";
               const enriched: Emotion = {
