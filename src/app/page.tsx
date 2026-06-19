@@ -33,7 +33,7 @@ export default function HomePage() {
             href={`/${spaceId}/view`}
             className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-4 py-3 rounded-lg font-medium"
           >
-            Open the viewer (share this with her)
+            Open the viewer (share this with them)
           </Link>
           <Link
             href={`/${spaceId}/settings`}

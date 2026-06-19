@@ -167,7 +167,7 @@ export default function SettingsEditor({ spaceId, initialEmotions, initialAction
 
       <section className="flex flex-col gap-3 mt-4">
         <h2 className="text-lg font-semibold">Actions</h2>
-        <p className="text-xs text-gray-500 -mt-1">What you might need from her. Shown as choices when logging.</p>
+        <p className="text-xs text-gray-500 -mt-1">What you might need from them. Shown as choices when logging.</p>
         {actions.map((a, i) => {
           const isNone = a.id === NO_ACTION_ID;
           return (

@@ -90,7 +90,7 @@ export default function LogPage({ params }: { params: Promise<{ spaceId: string 
               </div>
               <div>
                 <div className="font-semibold text-lg">{pending.name}</div>
-                <div className="text-xs text-gray-500">Pick what you need from her</div>
+                <div className="text-xs text-gray-500">Pick what you need from them</div>
               </div>
             </div>
 
