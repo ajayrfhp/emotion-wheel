@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Emotion Wheel
 
-## Getting Started
+A tiny private PWA for sharing how you're feeling — and what you need — with someone you care about.
 
-First, run the development server:
+Built for couples, friends, or family who want a low-friction way to communicate emotional state without needing to find words in the moment.
+
+🔗 **Live:** https://emotion-wheel-blond.vercel.app
+
+## How it works
+
+1. One person ("logger") taps an emotion on a Plutchik-style wheel
+2. Picks the action they'd like in return (e.g. _give me space_, _hug me_, _just listen_, _no action needed_)
+3. Optionally adds a short "why"
+4. The other person ("viewer") gets a push notification on their phone and sees the latest emotion + action card
+
+Each pair shares one **space** via a private URL. No accounts. No public feed. Just the latest state.
+
+## Pages
+
+| Path | Who | What |
+|---|---|---|
+| `/` | Either | Create or open a space |
+| `/[spaceId]/log` | Logger | Wheel, action picker, why textarea |
+| `/[spaceId]/view` | Viewer | Latest emotion + action, push toggle |
+| `/[spaceId]/settings` | Either | Customize emotions & actions for this space |
+
+## Features
+
+- 🎡 **Editable emotion wheel** — 8 Plutchik emotions out of the box, fully customizable per space
+- 🎯 **Action picker** — each emotion has a default action; pick a different one per log
+- 📲 **Web push notifications** — works on Android Chrome and iOS Safari (PWA install required for iOS)
+- 📦 **PWA installable** — add to home screen on Android / iOS / desktop
+- 🔒 **No accounts** — single shared secret URL per space
+- 💾 **Persistent across devices** — Upstash Redis storage
+
+## Stack
+
+- **Next.js 16** (App Router) + React 19 + TypeScript
+- **Tailwind CSS 4**
+- **SWR** for client data, 5s polling on viewer
+- **Upstash Redis** (via Vercel KV integration) for state
+- **web-push** + VAPID for browser push
+- **Service Worker** for shell caching, push handling, notification display
+- Deployed on **Vercel**
+
+## Local development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+To test the PWA / push features locally you need a production build (SW is dev-gated):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm run start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Then visit http://localhost:3000.
 
-## Learn More
+### Required environment variables
 
-To learn more about Next.js, take a look at the following resources:
+Create `.env.local`:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+# Upstash Redis (from Vercel KV integration)
+KV_REST_API_URL=https://...
+KV_REST_API_TOKEN=...
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# VAPID keys for web push — generate with: npx web-push generate-vapid-keys
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:you@example.com
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=...   # same as VAPID_PUBLIC_KEY
+```
 
-## Deploy on Vercel
+## Project structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+  app/
+    [spaceId]/{log,view,settings}/page.tsx   # the three main pages
+    api/spaces/[spaceId]/                     # config, latest, logs, subscriptions
+  components/
+    EmotionWheel.tsx                          # SVG pie wheel
+    SettingsEditor.tsx                        # per-space customization
+    NotificationToggle.tsx                    # push enable/disable
+    InstallHint.tsx                           # iOS Add-to-Home-Screen guide
+    ServiceWorkerRegistrar.tsx                # prod-only SW registration
+  lib/
+    emotions.ts                               # default emotions & actions
+    redis.ts                                  # Upstash client + key helpers
+    push.ts                                   # VAPID config + send/store subs
+    api.ts                                    # SWR hooks
+    store.ts                                  # localStorage helpers
+public/
+  sw.js                                       # service worker (cache + push)
+  manifest.webmanifest                        # PWA manifest
+  icon-*.png                                  # generated by scripts/gen-icons.mjs
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes on push
+
+- **Android Chrome:** works in the background as long as Chrome is set to *Unrestricted* battery use. Aggressive OEM battery managers (Samsung, Xiaomi, OnePlus) may need extra whitelisting.
+- **iOS Safari:** push requires the site to be installed as a PWA first (Add to Home Screen). The `InstallHint` card on `/view` guides this.
+- **Latency:** ~1–30s depending on OS doze state. Pushes are sent with `urgency: "high"`.
+
+## License
+
+Personal project — no license. Fork freely for your own use.
