@@ -172,21 +172,23 @@ export default function EmotionWheel({ emotions, onSelect, size = 360 }: Props) 
               const sStart = cStart + j * subSlice;
               const sEnd = sStart + subSlice;
               const sMid = sStart + subSlice / 2;
-              const labelR = (rInner + r) / 2;
+              // Anchor label near the outer edge so longer words extend inward
+              // within the slice rather than spilling past neighbors.
+              const labelR = r * 0.94;
               const labelPos = polar(cx, cy, labelR, sMid);
-              // Rotate so the text reads radially outward.
-              // SVG text rotation: angle 0 is along +x. We want text along the
-              // radial line, so rotate by (sMid) degrees, with extra +90 because
-              // 0° in our polar fn points "up". Use a flip when the slice is on
-              // the bottom half so text doesn't appear upside down.
-              const rot = sMid;
-              const flip = rot > 90 && rot < 270;
-              const rotation = flip ? rot + 180 : rot;
+              // Radial text: SVG rotate is CW from +x axis. Our polar uses
+              // (sMid - 90) to convert to SVG angle, so "outward" at this
+              // point makes angle (sMid - 90) with +x. We want text's +x
+              // direction to point outward, so rotate by (sMid - 90).
+              // On the bottom/left arc, flip 180° so words read right-side-up.
+              const onBottom = sMid > 90 && sMid < 270;
+              const rotation = onBottom ? sMid + 90 : sMid - 90;
               const enriched: Emotion = {
                 ...sub,
                 color: sub.color || lighter,
                 emoji: sub.emoji ?? core.emoji,
               };
+              const shortName = sub.name.length > 9 ? sub.name.slice(0, 8) + "…" : sub.name;
               return (
                 <g
                   key={sub.id}
@@ -204,15 +206,15 @@ export default function EmotionWheel({ emotions, onSelect, size = 360 }: Props) 
                   <text
                     x={labelPos.x}
                     y={labelPos.y}
-                    textAnchor="middle"
+                    textAnchor={onBottom ? "start" : "end"}
                     dominantBaseline="middle"
                     className="pointer-events-none"
-                    fontSize={size * 0.028}
+                    fontSize={size * 0.026}
                     fill="#1a1a1a"
                     fontWeight={500}
                     transform={`rotate(${rotation}, ${labelPos.x}, ${labelPos.y})`}
                   >
-                    {sub.name}
+                    {shortName}
                   </text>
                 </g>
               );
