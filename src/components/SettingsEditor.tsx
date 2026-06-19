@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Emotion, Action, DEFAULT_EMOTIONS, DEFAULT_ACTIONS, NO_ACTION_ID } from "@/lib/emotions";
+import { Emotion, Action, DEFAULT_EMOTIONS, DEFAULT_EMOTIONS_48, DEFAULT_ACTIONS, NO_ACTION_ID } from "@/lib/emotions";
 import { saveConfig } from "@/lib/api";
 
 type Props = {
@@ -81,10 +81,37 @@ export default function SettingsEditor({ spaceId, initialEmotions, initialAction
     }
   };
 
+  const useDetailed = () => {
+    if (confirm("Switch to the detailed 48-emotion wheel? Your action list is preserved.")) {
+      setEmotions(DEFAULT_EMOTIONS_48);
+    }
+  };
+
+  const useSimple = () => {
+    if (confirm("Switch to the simple 8-emotion wheel?")) {
+      setEmotions(DEFAULT_EMOTIONS);
+    }
+  };
+
+  const isDetailed = emotions.some((e) => e.children && e.children.length > 0);
+
   return (
     <>
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Emotions</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">Emotions</h2>
+          <button
+            onClick={isDetailed ? useSimple : useDetailed}
+            className="text-xs px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900"
+          >
+            {isDetailed ? "Use simple 8 wheel" : "Use detailed 48 wheel"}
+          </button>
+        </div>
+        {isDetailed && (
+          <p className="text-xs text-gray-500 -mt-1">
+            Detailed wheel — 6 cores × 8 sub-emotions. Editing below changes the cores; sub-emotions stay as defaults.
+          </p>
+        )}
         {emotions.map((e, i) => (
           <div
             key={e.id}

@@ -8,24 +8,113 @@ type Props = {
   size?: number;
 };
 
-// Build an SVG arc path for a slice of a pie chart centered at (cx, cy).
-function arcPath(cx: number, cy: number, r: number, startAngle: number, endAngle: number) {
+function polar(cx: number, cy: number, r: number, angleDeg: number) {
+  const a = ((angleDeg - 90) * Math.PI) / 180;
+  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+}
+
+// Simple pie slice (wedge from center to outer radius).
+function wedgePath(cx: number, cy: number, r: number, startAngle: number, endAngle: number) {
   const start = polar(cx, cy, r, endAngle);
   const end = polar(cx, cy, r, startAngle);
   const largeArc = endAngle - startAngle <= 180 ? 0 : 1;
   return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y} Z`;
 }
 
-function polar(cx: number, cy: number, r: number, angleDeg: number) {
-  const a = ((angleDeg - 90) * Math.PI) / 180;
-  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+// Annular sector (donut slice).
+function annularPath(
+  cx: number,
+  cy: number,
+  rInner: number,
+  rOuter: number,
+  startAngle: number,
+  endAngle: number,
+) {
+  const oStart = polar(cx, cy, rOuter, endAngle);
+  const oEnd = polar(cx, cy, rOuter, startAngle);
+  const iStart = polar(cx, cy, rInner, startAngle);
+  const iEnd = polar(cx, cy, rInner, endAngle);
+  const largeArc = endAngle - startAngle <= 180 ? 0 : 1;
+  return [
+    `M ${oEnd.x} ${oEnd.y}`,
+    `A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${oStart.x} ${oStart.y}`,
+    `L ${iEnd.x} ${iEnd.y}`,
+    `A ${rInner} ${rInner} 0 ${largeArc} 0 ${iStart.x} ${iStart.y}`,
+    "Z",
+  ].join(" ");
+}
+
+// Lighten a hex color toward white by a given amount [0..1].
+function lighten(hex: string, amount: number): string {
+  const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  if (!m) return hex;
+  const r = parseInt(m[1], 16);
+  const g = parseInt(m[2], 16);
+  const b = parseInt(m[3], 16);
+  const mix = (c: number) => Math.round(c + (255 - c) * amount);
+  const toHex = (n: number) => n.toString(16).padStart(2, "0");
+  return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`;
 }
 
 export default function EmotionWheel({ emotions, onSelect, size = 360 }: Props) {
   const cx = size / 2;
   const cy = size / 2;
   const r = size / 2 - 6;
-  const slice = 360 / emotions.length;
+  const hasChildren = emotions.some((e) => e.children && e.children.length > 0);
+
+  if (!hasChildren) {
+    // ---- Single ring (original layout) ----
+    const slice = 360 / emotions.length;
+    return (
+      <svg
+        viewBox={`0 0 ${size} ${size}`}
+        width="100%"
+        className="max-w-md mx-auto select-none touch-manipulation h-auto"
+        role="group"
+        aria-label="Emotion wheel"
+      >
+        {emotions.map((e, i) => {
+          const start = i * slice;
+          const end = (i + 1) * slice;
+          const mid = start + slice / 2;
+          const labelPos = polar(cx, cy, r * 0.65, mid);
+          return (
+            <g
+              key={e.id}
+              onClick={() => onSelect(e)}
+              className="cursor-pointer active:opacity-80 transition-opacity"
+              role="button"
+              aria-label={e.name}
+            >
+              <path d={wedgePath(cx, cy, r, start, end)} fill={e.color} stroke="white" strokeWidth={2} />
+              <text
+                x={labelPos.x}
+                y={labelPos.y}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="pointer-events-none"
+                fontSize={size * 0.05}
+                fill="#1a1a1a"
+                fontWeight={600}
+              >
+                <tspan x={labelPos.x} dy="-0.4em" fontSize={size * 0.07}>
+                  {e.emoji ?? ""}
+                </tspan>
+                <tspan x={labelPos.x} dy="1.4em">
+                  {e.name}
+                </tspan>
+              </text>
+            </g>
+          );
+        })}
+        <circle cx={cx} cy={cy} r={r * 0.18} fill="white" stroke="#e5e7eb" strokeWidth={2} />
+      </svg>
+    );
+  }
+
+  // ---- Two-ring layout ----
+  const coreSlice = 360 / emotions.length;
+  const rInner = r * 0.42;
 
   return (
     <svg
@@ -35,46 +124,103 @@ export default function EmotionWheel({ emotions, onSelect, size = 360 }: Props) 
       role="group"
       aria-label="Emotion wheel"
     >
-      {emotions.map((e, i) => {
-        const start = i * slice;
-        const end = (i + 1) * slice;
-        const mid = start + slice / 2;
-        const labelPos = polar(cx, cy, r * 0.65, mid);
+      {emotions.map((core, i) => {
+        const cStart = i * coreSlice;
+        const cEnd = (i + 1) * coreSlice;
+        const cMid = cStart + coreSlice / 2;
+        const corePos = polar(cx, cy, rInner * 0.6, cMid);
+        const children = core.children ?? [];
+        const subSlice = children.length ? coreSlice / children.length : 0;
+        const lighter = lighten(core.color, 0.35);
+
         return (
-          <g
-            key={e.id}
-            onClick={() => onSelect(e)}
-            className="cursor-pointer active:opacity-80 transition-opacity"
-            role="button"
-            aria-label={e.name}
-          >
-            <path
-              d={arcPath(cx, cy, r, start, end)}
-              fill={e.color}
-              stroke="white"
-              strokeWidth={2}
-            />
-            <text
-              x={labelPos.x}
-              y={labelPos.y}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              className="pointer-events-none"
-              fontSize={size * 0.05}
-              fill="#1a1a1a"
-              fontWeight={600}
+          <g key={core.id}>
+            {/* Inner core wedge */}
+            <g
+              onClick={() => onSelect(core)}
+              className="cursor-pointer active:opacity-80 transition-opacity"
+              role="button"
+              aria-label={core.name}
             >
-              <tspan x={labelPos.x} dy="-0.4em" fontSize={size * 0.07}>
-                {e.emoji ?? ""}
-              </tspan>
-              <tspan x={labelPos.x} dy="1.4em">
-                {e.name}
-              </tspan>
-            </text>
+              <path
+                d={wedgePath(cx, cy, rInner, cStart, cEnd)}
+                fill={core.color}
+                stroke="white"
+                strokeWidth={2}
+              />
+              <text
+                x={corePos.x}
+                y={corePos.y}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="pointer-events-none"
+                fontSize={size * 0.038}
+                fill="#1a1a1a"
+                fontWeight={700}
+              >
+                <tspan x={corePos.x} dy="-0.3em" fontSize={size * 0.05}>
+                  {core.emoji ?? ""}
+                </tspan>
+                <tspan x={corePos.x} dy="1.3em">
+                  {core.name}
+                </tspan>
+              </text>
+            </g>
+
+            {/* Outer ring: sub-emotions */}
+            {children.map((sub, j) => {
+              const sStart = cStart + j * subSlice;
+              const sEnd = sStart + subSlice;
+              const sMid = sStart + subSlice / 2;
+              const labelR = (rInner + r) / 2;
+              const labelPos = polar(cx, cy, labelR, sMid);
+              // Rotate so the text reads radially outward.
+              // SVG text rotation: angle 0 is along +x. We want text along the
+              // radial line, so rotate by (sMid) degrees, with extra +90 because
+              // 0° in our polar fn points "up". Use a flip when the slice is on
+              // the bottom half so text doesn't appear upside down.
+              const rot = sMid;
+              const flip = rot > 90 && rot < 270;
+              const rotation = flip ? rot + 180 : rot;
+              const enriched: Emotion = {
+                ...sub,
+                color: sub.color || lighter,
+                emoji: sub.emoji ?? core.emoji,
+              };
+              return (
+                <g
+                  key={sub.id}
+                  onClick={() => onSelect(enriched)}
+                  className="cursor-pointer active:opacity-80 transition-opacity"
+                  role="button"
+                  aria-label={sub.name}
+                >
+                  <path
+                    d={annularPath(cx, cy, rInner, r, sStart, sEnd)}
+                    fill={enriched.color}
+                    stroke="white"
+                    strokeWidth={1.5}
+                  />
+                  <text
+                    x={labelPos.x}
+                    y={labelPos.y}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="pointer-events-none"
+                    fontSize={size * 0.028}
+                    fill="#1a1a1a"
+                    fontWeight={500}
+                    transform={`rotate(${rotation}, ${labelPos.x}, ${labelPos.y})`}
+                  >
+                    {sub.name}
+                  </text>
+                </g>
+              );
+            })}
           </g>
         );
       })}
-      <circle cx={cx} cy={cy} r={r * 0.18} fill="white" stroke="#e5e7eb" strokeWidth={2} />
+      <circle cx={cx} cy={cy} r={rInner * 0.18} fill="white" stroke="#e5e7eb" strokeWidth={2} />
     </svg>
   );
 }
