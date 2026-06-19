@@ -176,13 +176,14 @@ export default function EmotionWheel({ emotions, onSelect, size = 360 }: Props) 
               // within the slice rather than spilling past neighbors.
               const labelR = r * 0.94;
               const labelPos = polar(cx, cy, labelR, sMid);
-              // Radial text: SVG rotate is CW from +x axis. Our polar uses
-              // (sMid - 90) to convert to SVG angle, so "outward" at this
-              // point makes angle (sMid - 90) with +x. We want text's +x
-              // direction to point outward, so rotate by (sMid - 90).
-              // On the bottom/left arc, flip 180° so words read right-side-up.
-              const onBottom = sMid > 90 && sMid < 270;
-              const rotation = onBottom ? sMid + 90 : sMid - 90;
+              // Radial text: SVG rotate is CW from +x axis. For the text's
+              // +x direction to point outward, rotate by (sMid - 90).
+              // On the bottom half of the wheel (sMid 180–360, i.e., below
+              // the horizontal axis) that rotation produces upside-down text
+              // — flip 180° and swap the anchor so it still extends inward.
+              const flip = sMid >= 180;
+              const rotation = flip ? sMid + 90 : sMid - 90;
+              const anchor = flip ? "start" : "end";
               const enriched: Emotion = {
                 ...sub,
                 color: sub.color || lighter,
@@ -206,7 +207,7 @@ export default function EmotionWheel({ emotions, onSelect, size = 360 }: Props) 
                   <text
                     x={labelPos.x}
                     y={labelPos.y}
-                    textAnchor={onBottom ? "start" : "end"}
+                    textAnchor={anchor}
                     dominantBaseline="middle"
                     className="pointer-events-none"
                     fontSize={size * 0.026}
