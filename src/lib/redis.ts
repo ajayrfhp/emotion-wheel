@@ -16,5 +16,4 @@ export const redis = new Redis({ url: url ?? "", token: token ?? "" });
 export const keys = {
   space: (id: string) => `ew:space:${id}`,
   latest: (id: string) => `ew:latest:${id}`,
-  pushSubs: (id: string) => `ew:push:${id}`,
 };

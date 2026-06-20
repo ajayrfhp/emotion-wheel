@@ -2,8 +2,6 @@
 
 import { use, useEffect, useState } from "react";
 import { useLatest } from "@/lib/api";
-import InstallHint from "@/components/InstallHint";
-import NotificationToggle from "@/components/NotificationToggle";
 
 function timeAgo(ts: number) {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -28,9 +26,6 @@ export default function ViewPage({ params }: { params: Promise<{ spaceId: string
       <header className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold">Latest</h1>
       </header>
-
-      <InstallHint />
-      <NotificationToggle spaceId={spaceId} />
 
       {isLoading && !latest ? (
         <div className="flex-1 flex items-center justify-center text-gray-500">Loading…</div>
