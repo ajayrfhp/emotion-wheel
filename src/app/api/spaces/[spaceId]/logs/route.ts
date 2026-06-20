@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redis, keys } from "@/lib/redis";
 import { sendPushToSpace } from "@/lib/push";
+import { sendPushoverToSpace } from "@/lib/pushover";
 import type { LogEntry } from "@/lib/store";
 
 export const runtime = "nodejs";
@@ -44,6 +45,17 @@ export async function POST(
     body: bodyText,
     url: `/${spaceId}/view`,
   }).catch((err) => console.warn("[push] failed", err));
+
+  // Pushover (works on iOS without PWA install).
+  const viewUrl =
+    (process.env.NEXT_PUBLIC_BASE_URL ?? `https://${req.headers.get("host") ?? ""}`) +
+    `/${spaceId}/view`;
+  void sendPushoverToSpace(spaceId, {
+    title,
+    body: bodyText,
+    url: viewUrl,
+    urlTitle: "Open Emotion Wheel",
+  }).catch((err) => console.warn("[pushover] failed", err));
 
   return NextResponse.json({ latest: entry });
 }

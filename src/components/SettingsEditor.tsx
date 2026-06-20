@@ -2,18 +2,28 @@
 
 import { useState } from "react";
 import { Emotion, Action, DEFAULT_EMOTIONS, DEFAULT_EMOTIONS_48, DEFAULT_ACTIONS, NO_ACTION_ID } from "@/lib/emotions";
-import { saveConfig } from "@/lib/api";
+import { saveConfig, PushoverRecipient } from "@/lib/api";
 
 type Props = {
   spaceId: string;
   initialEmotions: Emotion[];
   initialActions: Action[];
+  initialPushoverRecipients?: PushoverRecipient[];
   onSaved?: () => void;
 };
 
-export default function SettingsEditor({ spaceId, initialEmotions, initialActions, onSaved }: Props) {
+export default function SettingsEditor({
+  spaceId,
+  initialEmotions,
+  initialActions,
+  initialPushoverRecipients,
+  onSaved,
+}: Props) {
   const [emotions, setEmotions] = useState<Emotion[]>(initialEmotions);
   const [actions, setActions] = useState<Action[]>(initialActions);
+  const [pushoverRecipients, setPushoverRecipients] = useState<PushoverRecipient[]>(
+    initialPushoverRecipients ?? [],
+  );
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +73,7 @@ export default function SettingsEditor({ spaceId, initialEmotions, initialAction
     setSaving(true);
     setError(null);
     try {
-      await saveConfig(spaceId, { emotions, actions });
+      await saveConfig(spaceId, { emotions, actions, pushoverRecipients });
       setSaved(true);
       onSaved?.();
       setTimeout(() => setSaved(false), 1500);
@@ -73,6 +83,14 @@ export default function SettingsEditor({ spaceId, initialEmotions, initialAction
       setSaving(false);
     }
   };
+
+  // ---- Pushover recipients
+  const updatePR = (i: number, patch: Partial<PushoverRecipient>) =>
+    setPushoverRecipients((p) => p.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  const removePR = (i: number) =>
+    setPushoverRecipients((p) => p.filter((_, idx) => idx !== i));
+  const addPR = () =>
+    setPushoverRecipients((p) => [...p, { key: "", label: "" }]);
 
   const reset = () => {
     if (confirm("Reset wheel and actions to defaults?")) {
@@ -201,6 +219,50 @@ export default function SettingsEditor({ spaceId, initialEmotions, initialAction
           className="border border-dashed border-gray-300 dark:border-gray-700 rounded-xl py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-900"
         >
           + Add action
+        </button>
+      </section>
+
+      <section className="flex flex-col gap-3 mt-4">
+        <h2 className="text-lg font-semibold">Pushover recipients</h2>
+        <p className="text-xs text-gray-500 -mt-1">
+          Get reliable notifications on iPhone & Android via the Pushover app. Each recipient needs
+          to install Pushover and share their user key.
+        </p>
+        {pushoverRecipients.map((r, i) => (
+          <div
+            key={i}
+            className="border border-gray-200 dark:border-gray-700 rounded-xl p-3 flex flex-col gap-2"
+          >
+            <input
+              value={r.label}
+              onChange={(ev) => updatePR(i, { label: ev.target.value })}
+              placeholder="Name (e.g. Wife)"
+              className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 bg-transparent text-sm"
+            />
+            <input
+              value={r.key}
+              onChange={(ev) => updatePR(i, { key: ev.target.value })}
+              placeholder="Pushover user key"
+              className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 bg-transparent text-sm font-mono"
+              spellCheck={false}
+              autoCapitalize="off"
+              autoCorrect="off"
+            />
+            <div className="flex justify-end text-xs">
+              <button
+                onClick={() => removePR(i)}
+                className="px-2 py-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        ))}
+        <button
+          onClick={addPR}
+          className="border border-dashed border-gray-300 dark:border-gray-700 rounded-xl py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-900"
+        >
+          + Add Pushover recipient
         </button>
       </section>
 

@@ -7,7 +7,7 @@ import SettingsEditor from "@/components/SettingsEditor";
 
 export default function SettingsPage({ params }: { params: Promise<{ spaceId: string }> }) {
   const { spaceId } = use(params);
-  const { emotions, actions, isLoading, mutate } = useSpaceConfig(spaceId);
+  const { emotions, actions, pushoverRecipients, isLoading, mutate } = useSpaceConfig(spaceId);
 
   if (isLoading) {
     return (
@@ -17,7 +17,12 @@ export default function SettingsPage({ params }: { params: Promise<{ spaceId: st
     );
   }
 
-  const k = emotions.map((e) => e.id).join(",") + "|" + actions.map((a) => a.id).join(",");
+  const k =
+    emotions.map((e) => e.id).join(",") +
+    "|" +
+    actions.map((a) => a.id).join(",") +
+    "|" +
+    pushoverRecipients.map((r) => r.key).join(",");
 
   return (
     <main className="flex-1 flex flex-col p-4 max-w-md mx-auto w-full gap-4">
@@ -33,6 +38,7 @@ export default function SettingsPage({ params }: { params: Promise<{ spaceId: st
         spaceId={spaceId}
         initialEmotions={emotions}
         initialActions={actions}
+        initialPushoverRecipients={pushoverRecipients}
         onSaved={() => mutate()}
         key={k}
       />

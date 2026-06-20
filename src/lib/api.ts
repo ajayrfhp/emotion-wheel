@@ -10,7 +10,12 @@ const fetcher = async (url: string) => {
   return res.json();
 };
 
-export type SpaceConfig = { emotions: Emotion[]; actions: Action[] };
+export type PushoverRecipient = { key: string; label: string };
+export type SpaceConfig = {
+  emotions: Emotion[];
+  actions: Action[];
+  pushoverRecipients?: PushoverRecipient[];
+};
 
 export function useSpaceConfig(spaceId: string) {
   const { data, error, isLoading, mutate } = useSWR<SpaceConfig>(
@@ -20,6 +25,7 @@ export function useSpaceConfig(spaceId: string) {
   return {
     emotions: data?.emotions ?? DEFAULT_EMOTIONS,
     actions: data?.actions ?? DEFAULT_ACTIONS,
+    pushoverRecipients: data?.pushoverRecipients ?? [],
     isLoading,
     error,
     mutate,
